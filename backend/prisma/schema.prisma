@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  telegramId      String   @unique
+  username        String?
+  firstName       String?
+  photoUrl        String?
+  balance         Decimal  @default(0) @db.Decimal(18, 8)
+  miningRate      Decimal  @default(10) @db.Decimal(18, 8)
+  minerLevel      Int      @default(1)
+  xp              Int      @default(0)
+  userLevel       Int      @default(1)
+  dailyStreak     Int      @default(0)
+  lastDailyClaim  DateTime?
+  isBanned        Boolean  @default(false)
+  referredById    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  referredBy        User?              @relation("Referrals", fields: [referredById], references: [id])
+  referrals         User[]             @relation("Referrals")
+  miningSessions    MiningSession[]
+  referralsMade     Referral[]         @relation("Referrer")
+  referralsReceived Referral[]         @relation("Referred")
+  dailyRewards      DailyReward[]
+  taskCompletions   TaskCompletion[]
+  achievements      UserAchievement[]
+
+  @@index([balance])
+  @@index([miningRate])
+  @@index([referredById])
+}
+
+model MiningSession {
+  id           String    @id @default(cuid())
+  userId       String
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  claimed      Boolean   @default(false)
+  earnedAmount Decimal   @default(0) @db.Decimal(18, 8)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([claimed])
+}
+
+model Referral {
+  id             String  @id @default(cuid())
+  referrerId     String
+  referredUserId String  @unique
+  rewardEarned   Decimal @default(0) @db.Decimal(18, 8)
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+
+  referrer     User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser User @relation("Referred", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+}
+
+model DailyReward {
+  id        String   @id @default(cuid())
+  userId    String
+  dayNumber Int
+  claimedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  reward      Decimal  @db.Decimal(18, 8)
+  type        String   @default("custom")
+  url         String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  completions TaskCompletion[]
+}
+
+model TaskCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  taskId      String
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId])
+  @@index([userId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String
+  xpReward    Int      @default(0)
+  trxReward   Decimal  @default(0) @db.Decimal(18, 8)
+  createdAt   DateTime @default(now())
+
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
