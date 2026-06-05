@@ -2,16 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { getConfig } from './config';
 import routes from './routes';
 import { errorMiddleware } from './middleware/error.middleware';
 
 const app = express();
 
+const frontendUrl = process.env.FRONTEND_URL || 'https://tron-miner.vercel.app';
+
 app.use(helmet());
 app.use(
   cors({
-    origin: [getConfig().frontendUrl, /\.vercel\.app$/],
+    origin: [frontendUrl, /\.vercel\.app$/],
     credentials: true,
   })
 );

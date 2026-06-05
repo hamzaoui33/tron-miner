@@ -20,7 +20,17 @@ router.use('/tasks', taskRoutes);
 router.use('/leaderboard', leaderboardRoutes);
 
 router.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const configured = !!(process.env.DATABASE_URL && process.env.TELEGRAM_BOT_TOKEN && process.env.JWT_SECRET);
+  res.json({
+    status: 'ok',
+    configured,
+    timestamp: new Date().toISOString(),
+    missing: [
+      !process.env.DATABASE_URL && 'DATABASE_URL',
+      !process.env.TELEGRAM_BOT_TOKEN && 'TELEGRAM_BOT_TOKEN',
+      !process.env.JWT_SECRET && 'JWT_SECRET',
+    ].filter(Boolean),
+  });
 });
 
 export default router;
