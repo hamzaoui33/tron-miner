@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
-import { config } from '../config';
+import { getConfig } from '../config';
 import { validateTelegramInitData } from './telegram.service';
 import { miningService } from './mining.service';
 import { toNumber } from '../utils/decimal';
@@ -13,13 +13,14 @@ export interface JwtPayload {
 
 export class AuthService {
   generateToken(payload: JwtPayload): string {
-    return jwt.sign(payload, config.jwtSecret, {
-      expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'],
+    const { jwtSecret, jwtExpiresIn } = getConfig();
+    return jwt.sign(payload, jwtSecret, {
+      expiresIn: jwtExpiresIn as jwt.SignOptions['expiresIn'],
     });
   }
 
   verifyToken(token: string): JwtPayload {
-    return jwt.verify(token, config.jwtSecret) as JwtPayload;
+    return jwt.verify(token, getConfig().jwtSecret) as JwtPayload;
   }
 
   async authenticateWithTelegram(initData: string) {

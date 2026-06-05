@@ -14,21 +14,48 @@ const envSchema = z.object({
   ADMIN_TELEGRAM_IDS: z.string().default(''),
 });
 
-const parsed = envSchema.safeParse(process.env);
-
-if (!parsed.success) {
-  console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
-  process.exit(1);
+export interface AppConfig {
+  port: number;
+  nodeEnv: string;
+  databaseUrl: string;
+  jwtSecret: string;
+  jwtExpiresIn: string;
+  telegramBotToken: string;
+  frontendUrl: string;
+  adminTelegramIds: string[];
+  isDev: boolean;
 }
 
-export const config = {
-  port: parseInt(parsed.data.PORT, 10),
-  nodeEnv: parsed.data.NODE_ENV,
-  databaseUrl: parsed.data.DATABASE_URL,
-  jwtSecret: parsed.data.JWT_SECRET,
-  jwtExpiresIn: parsed.data.JWT_EXPIRES_IN,
-  telegramBotToken: parsed.data.TELEGRAM_BOT_TOKEN,
-  frontendUrl: parsed.data.FRONTEND_URL,
-  adminTelegramIds: parsed.data.ADMIN_TELEGRAM_IDS.split(',').filter(Boolean),
-  isDev: parsed.data.NODE_ENV === 'development',
-};
+let cachedConfig: AppConfig | null = null;
+
+export function getConfig(): AppConfig {
+  if (cachedConfig) return cachedConfig;
+
+  const parsed = envSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors;
+    throw new Error(`Invalid environment variables: ${JSON.stringify(errors)}`);
+  }
+
+  cachedConfig = {
+    port: parseInt(parsed.data.PORT, 10),
+    nodeEnv: parsed.data.NODE_ENV,
+    databaseUrl: parsed.data.DATABASE_URL,
+    jwtSecret: parsed.data.JWT_SECRET,
+    jwtExpiresIn: parsed.data.JWT_EXPIRES_IN,
+    telegramBotToken: parsed.data.TELEGRAM_BOT_TOKEN,
+    frontendUrl: parsed.data.FRONTEND_URL,
+    adminTelegramIds: parsed.data.ADMIN_TELEGRAM_IDS.split(',').filter(Boolean),
+    isDev: parsed.data.NODE_ENV === 'development',
+  };
+
+  return cachedConfig;
+}
+
+/** @deprecated Use getConfig() — kept for gradual migration */
+export const config = new Proxy({} as AppConfig, {
+  get(_target, prop: keyof AppConfig) {
+    return getConfig()[prop];
+  },
+});

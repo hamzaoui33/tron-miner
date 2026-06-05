@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
 import { prisma } from '../lib/prisma';
-import { config } from '../config';
+import { getConfig } from '../config';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -32,7 +32,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
 }
 
 export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
-  if (!req.telegramId || !config.adminTelegramIds.includes(req.telegramId)) {
+  if (!req.telegramId || !getConfig().adminTelegramIds.includes(req.telegramId)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { config } from '../config';
+import { getConfig } from '../config';
 import logger from '../utils/logger';
 
 export interface TelegramUser {
@@ -55,7 +55,7 @@ export function validateTelegramInitData(initData: string): ParsedInitData | nul
     const dataCheckString = dataCheckArr.join('\n');
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
-      .update(config.telegramBotToken)
+      .update(getConfig().telegramBotToken)
       .digest();
 
     const calculatedHash = crypto
